@@ -124,18 +124,14 @@ convert "$filepath" -quality "$quality" "$(formatted_output_name "$base_filename
 
 # *Very* dirty.
 # Maybe should cordon this off into a function or two?
-# Definitely needs cleanup-- the main chunk is a pipeline 8 commands long.
-# Do I even need 8 commands? It'll end up spawning
-# 8 + 7 + 6 + 5 + 4 + 3 + 2 + 1 = 36 processes doing so, and that's pretty bad.
+
+# Dropped it down to 2 (gargantuan) commands.
+# Rotating +45 degrees, then -45 degrees seems to produce
+# the same effect as going +45, +45, +45 (...) until you get back to 360.
+# It's more tractable this way, and it only spawns 2 + 1 = 3 processes, not 36.
 for i in $(seq 0 "$((number_of_iterations - 1))"); do
 	>&2 echo "$base_filename"."$extension"':' start "$i": quality "$quality"
 	convert "$(formatted_output_name "$base_filename" "$quality" "$i")".jpg -rotate 45 -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
+	convert jpeg:- -rotate -45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
 	>&2 echo "$base_filename"."$extension": end "$i"
 done

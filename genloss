@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# Shebang points to /usr/bin/env for portability.
+# FreeBSD does not mount /usr/bin to /bin, unlike Linux.
+
+# Boilerplate to make Bash a saner language.
+# Roughly:
+
+# "don't allow use of unset variables"
+set -o nounset
+
+# "exit on error"
+set -o errexit
+
+# "fail if any command within a pipeline errors out (returns nonzero)"
+set -o pipefail
+
+function help_text() {
+cat << EOF
+$(usage)
+
+Options:
+ -n, --number       number of iterations (default 2500)
+ -q, --quality      JPEG quality, integer from 0 to 100 (default 80)
+ -f, --fuzz         fuzziness when cropping excess space (default 7.5%)
+ -v, --verbose      verbose mode
+ -h, --help         help
+EOF
+}
+
+function usage() {
+cat << EOF
+Induce JPEG generation loss on images via iterated rotation and saving.
+Usage: $(basename "$0"): [options] filename
+EOF
+}
+
+function verbose_params() {
+cat << EOF
+Argument list: "$ARGS"
+Input filename: "$filename"
+Detected base filename: "$base_filename"
+Detected file extension: "$extension"
+Detected resolution: "$resolution"
+Number of iterations: "$number_of_iterations"
+JPEG quality level: "$quality"
+fuzz value: "$fuzz_level"
+
+EOF
+}
+
+ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help -- "$@")
+eval set -- "$ARGS"
+while true; do
+		case "$1" in
+		-n | --number)
+			number_of_iterations="$2"
+			shift 2
+			;;
+		-q | --quality)
+			quality="$2"
+			shift 2
+			;;
+		-f | --fuzz)
+			fuzz_level="$2"
+			shift 2
+			;;
+		-v | --verbose)
+			verbose="1"
+			shift
+			;;
+		-h | --help)
+			help_text
+			exit 127
+			;;
+		--)
+			filepath="$2"
+			break
+			;;
+		*)
+			echo What is "$2"?
+			exit 1
+			break
+	esac
+done
+# Extracting filename from the given file path-- the script
+# might be invoked using a path, not just a file name.
+filename="$(basename "$filepath")"
+
+# (Attempting) to extract file extension and extension-less filename.
+# Produces cleaner output filenames.
+# This is prone to pitfalls, but it's either this, or shelling out to
+# Python, using os.path.splittext().
+# Also, when was the last time you encountered
+# an image file without a file extension?
+# Or one with *two*, for that matter?
+extension="${filename##*.}"
+base_filename="${filename%.*}"
+resolution="$(identify -ping -format '%[w]x%[h]' "$filepath")"
+
+# Bunch of defaults.
+quality="${quality-80}"
+fuzz_level="${fuzz_level-7.5%}"
+number_of_iterations="${number_of_iterations-2500}"
+
+# Getting around nounset restrictions by defaulting verbose
+# to 0 if 'verbose' is unset. Possibly dirty.
+verbose="${verbose-0}"
+
+if [[ "$verbose" == 1 ]];
+then
+	verbose_params
+fi
+
+# Dirty hack? I think it's needed to keep the filename in a format the
+# rest of the script can use later.
+convert "$filepath" -quality "$quality" "$base_filename"-q"$quality"-0.jpg
+
+# *Very* dirty.
+# Maybe should cordon this off into a function or two?
+# Definitely needs cleanup-- the main chunk is a pipeline 8 commands long.
+for i in $(seq 0 "$((number_of_iterations - 1))"); do
+	>&2 echo "$base_filename"."$extension"':' start "$i": quality "$quality"
+	convert "$base_filename"-q"$quality"-"$i".jpg -rotate 45 -quality "$quality" jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" jpeg:- | \
+	convert jpeg:- -rotate 45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$base_filename"-q"$quality"-"$(("$i" + 1))".jpg
+
+	# Don't get me started on this disaster.
+	current_resolution=$(identify -ping -format "%[w]x%[h]" "$base_filename"-q"$quality"-"$i".jpg)
+	>&2 echo "$base_filename"."$extension": end "$i"
+done

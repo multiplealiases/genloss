@@ -1,0 +1,7 @@
+#!/bin/false
+# Source this file for interactive use.
+# That, or move the scripts here to a directory in your PATH.
+# I suggest $HOME/.local/bin, but I'm not your mom.
+# This file *should not* be executable.
+# The shebang is set to /bin/false to prevent executing this file.
+export PATH="$PATH":"$PWD"

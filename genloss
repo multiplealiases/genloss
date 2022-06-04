@@ -72,7 +72,7 @@ fuzz value: "$fuzz_level"
 EOF
 }
 
-ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help-- "$@")
+ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help -- "$@")
 eval set -- "$ARGS"
 while true; do
 		case "$1" in

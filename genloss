@@ -25,6 +25,8 @@ Options:
  -f, --fuzz         fuzziness when cropping excess space (default 1%)
  -v, --verbose      verbose mode
  -h, --help         display this help text
+ --                 disables argument-parsing
+                    (useful for filenames that start with '-')
 EOF
 }
 

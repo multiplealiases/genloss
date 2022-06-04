@@ -16,22 +16,46 @@ set -o pipefail
 
 function help_text() {
 cat << EOF
+$(banner)
 $(usage)
 
 Options:
  -n, --number       number of iterations (default 2500)
  -q, --quality      JPEG quality, integer from 0 to 100 (default 80)
- -f, --fuzz         fuzziness when cropping excess space (default 7.5%)
+ -f, --fuzz         fuzziness when cropping excess space (default 1%)
  -v, --verbose      verbose mode
- -h, --help         help
+ -h, --help         display this help text
 EOF
+}
+
+function banner() {
+echo Induce JPEG generation loss on images via iterated rotation and saving.
+}
+
+function err_file_notregular() {
+cat << EOF
+"$filepath": exists, but is not regular-type.
+Did you input a directory by mistake?
+Note that file descriptors (such as /dev/stdin) are not yet supported as input.
+EOF
+exit 2
+}
+
+function err_file_notexist() {
+cat << EOF
+"$filepath": does not exist.
+EOF
+exit 3
 }
 
 function usage() {
 cat << EOF
-Induce JPEG generation loss on images via iterated rotation and saving.
-Usage: $(basename "$0"): [options] filename
+Usage: $(basename "$0") [options] filename
 EOF
+}
+
+function invoke_help() {
+echo Invoke 'genloss --help' for further help.
 }
 
 function verbose_params() {
@@ -48,7 +72,7 @@ fuzz value: "$fuzz_level"
 EOF
 }
 
-ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help -- "$@")
+ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help-- "$@")
 eval set -- "$ARGS"
 while true; do
 		case "$1" in
@@ -73,6 +97,11 @@ while true; do
 			exit 127
 			;;
 		--)
+			# The +o nounset, -o nounset pattern is needed, otherwise
+            # the script will stop at evaluating an unset $2 variable.
+			set +o nounset
+			if [[ -z "$2" ]]; then usage; invoke_help; exit 1 ; fi
+			set -o nounset
 			filepath="$2"
 			break
 			;;
@@ -82,6 +111,23 @@ while true; do
 			break
 	esac
 done
+# Does the filepath even exist?
+# If not, print a suitable error message.
+# This prevents the relatively unfriendly error message that
+# ImageMagick (or whatever got invoked) typically displays for a nonexistent file.
+
+# Ooh, look at me, I'm fancy and using guard clauses!
+
+if [[ ! (-e "$filepath") ]] # if the file does not exist
+then
+	err_file_notexist
+# I need a regular file, not just any file you can throw at me.
+elif [[ ! (-f "$filepath") ]] # if the file is not a regular file
+then
+	err_file_notregular
+fi
+
+
 # Extracting filename from the given file path-- the script
 # might be invoked using a path, not just a file name.
 filename="$(basename "$filepath")"
@@ -99,7 +145,7 @@ resolution="$(identify -ping -format '%[w]x%[h]' "$filepath")"
 
 # Bunch of defaults.
 quality="${quality-80}"
-fuzz_level="${fuzz_level-7.5%}"
+fuzz_level="${fuzz_level-1%}"
 number_of_iterations="${number_of_iterations-2500}"
 
 # Getting around nounset restrictions by defaulting verbose
@@ -111,7 +157,9 @@ then
 	verbose_params
 fi
 
-# base_filename, quality, iteration.
+# $1: base_filename
+# $2: quality
+# $3: iteration
 # Dirty, but saves me the effort of checking each time
 # I want to change the output format filename, at least in theory.
 function formatted_output_name() {
@@ -126,12 +174,30 @@ convert "$filepath" -quality "$quality" "$(formatted_output_name "$base_filename
 # Maybe should cordon this off into a function or two?
 
 # Dropped it down to 2 (gargantuan) commands.
-# Rotating +45 degrees, then -45 degrees seems to produce
-# the same effect as going +45, +45, +45 (...) until you get back to 360.
+# Rotating rotate = random(0,360) degrees, then -n degrees seems to produce
+# the same effect as going +45, +45, +45 (...) until you get back to 360.a
 # It's more tractable this way, and it only spawns 2 + 1 = 3 processes, not 36.
 for i in $(seq 0 "$((number_of_iterations - 1))"); do
+	# I believe --random-source is GNU-specific.
+	# At the very least, it doesn't exist in Busybox.
+	rotate="$(shuf -i 0-360 -n 1 --random-source=/dev/urandom)"
 	>&2 echo "$base_filename"."$extension"':' start "$i": quality "$quality"
-	convert "$(formatted_output_name "$base_filename" "$quality" "$i")".jpg -rotate 45 -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate -45 -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
+	# This is hardcoded to use 'convert'.
+	# I tried implementing functionality to allow changing this dynamically,
+	# but you get into such fun things like metaprogramming... which, to quote http://mywiki.wooledge.org/BashFAQ/050
+	# > In bash, the only ways to generate, manipulate, or store code more
+	# > complex than a simple command at runtime involve storing the code's
+	# > plain text in a variable, file, stream, or function, and then using
+	# > eval or sh to evaluate the stored code.  Directly manipulating raw
+	# > code strings is among the least robust of metaprogramming techniques
+	# > and most common sources of bugs and security issues.
+	# Implement that at your own risk.
+
+	# If you really need to change the invocation, change the 'convert' at the start
+	# of the next 2 lines to something else. For what it's worth, GraphicsMagick
+	# works perfectly fine in place of ImageMagick--
+	# you might even be using it by accident, depending on your system!
+	convert "$(formatted_output_name "$base_filename" "$quality" "$i")".jpg -rotate "$rotate" -quality "$quality" jpeg:- | \
+	convert jpeg:- -rotate -"$rotate" -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
 	>&2 echo "$base_filename"."$extension": end "$i"
 done

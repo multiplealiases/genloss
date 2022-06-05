@@ -27,6 +27,9 @@ Options:
  -h, --help         display this help text
  --                 disables argument-parsing
                     (useful for filenames that start with '-')
+ -b, --background   background color used in trimming.
+                    If specifying colors in '#' notation,
+                    use quotes to prevent it being parsed as a comment.
 EOF
 }
 
@@ -74,7 +77,7 @@ fuzz value: "$fuzz_level"
 EOF
 }
 
-ARGS=$(getopt --options n:,q:,f:,vh --long number:,quality:,fuzz:,verbose,help -- "$@")
+ARGS=$(getopt --options n:,q:,f:,v,h,b: --long number:,quality:,fuzz:,verbose,help,background: -- "$@")
 eval set -- "$ARGS"
 while true; do
 		case "$1" in
@@ -97,6 +100,10 @@ while true; do
 		-h | --help)
 			help_text
 			exit 127
+			;;
+		-b | --background)
+			background_color="$2"
+			shift 2
 			;;
 		--)
 			# The +o nounset, -o nounset pattern is needed, otherwise
@@ -149,6 +156,7 @@ resolution="$(identify -ping -format '%[w]x%[h]' "$filepath")"
 quality="${quality-80}"
 fuzz_level="${fuzz_level-1%}"
 number_of_iterations="${number_of_iterations-2500}"
+background_color="${background_color-white}"
 
 # Getting around nounset restrictions by defaulting verbose
 # to 0 if 'verbose' is unset. Possibly dirty.
@@ -199,7 +207,7 @@ for i in $(seq 0 "$((number_of_iterations - 1))"); do
 	# of the next 2 lines to something else. For what it's worth, GraphicsMagick
 	# works perfectly fine in place of ImageMagick--
 	# you might even be using it by accident, depending on your system!
-	convert "$(formatted_output_name "$base_filename" "$quality" "$i")".jpg -rotate "$rotate" -quality "$quality" jpeg:- | \
-	convert jpeg:- -rotate -"$rotate" -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
+	convert "$(formatted_output_name "$base_filename" "$quality" "$i")".jpg -background "$background_color" -rotate "$rotate" -quality "$quality" jpeg:- | \
+	convert jpeg:- -background "$background_color" -rotate -"$rotate" -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))".jpg
 	>&2 echo "$base_filename"."$extension": end "$i"
 done

@@ -42,7 +42,7 @@ echo Induce JPEG generation loss on images via iterated rotation and saving.
 
 function err_file_notregular() {
 cat << EOF
-"$filepath": exists, but is not regular-type.
+$filepath: exists, but is not regular-type.
 Did you input a directory by mistake?
 Note that file descriptors (such as /dev/stdin) are not yet supported as input.
 EOF
@@ -51,7 +51,7 @@ exit 2
 
 function err_file_notexist() {
 cat << EOF
-"$filepath": does not exist.
+$filepath: does not exist.
 EOF
 exit 3
 }
@@ -212,10 +212,23 @@ for i in $(seq 0 "$((number_of_iterations - 1))"); do
 	# Implement that at your own risk.
 
 	# If you really need to change the invocation, change the 'convert' at the start
-	# of the next 2 lines to something else. For what it's worth, GraphicsMagick
+	# of the next 2 commands to something else. For what it's worth, GraphicsMagick
 	# works perfectly fine in place of ImageMagick--
 	# you might even be using it by accident, depending on your system!
-	convert "$(formatted_output_name "$base_filename" "$quality" "$i")"."$image_format" -background "$background_color" -rotate "$rotate" -quality "$quality" "$image_format":- | \
-	convert "$image_format":- -background "$background_color" -rotate -"$rotate" -quality "$quality" -fuzz "$fuzz_level" -trim +repage -gravity center -extent "$resolution" "$(formatted_output_name "$base_filename" "$quality" $((i + 1)))"."$image_format"
+	convert "$(formatted_output_name "$base_filename" "$quality" "$i")"."$image_format" \
+	-background "$background_color" \
+	-rotate "$rotate" \
+	-quality "$quality" \
+	"$image_format":- | \
+	\
+	convert "$image_format":- \
+	-background "$background_color" \
+	-rotate -"$rotate" \
+	-quality "$quality" \
+	-fuzz "$fuzz_level" \
+	-trim +repage \
+	-gravity center \
+	-extent "$resolution" \
+	"$(formatted_output_name "$base_filename" "$quality" $((i + 1)))"."$image_format"
 	>&2 echo "$base_filename"."$extension": end "$i"
 done

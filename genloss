@@ -40,12 +40,11 @@ $(usage)
 Options:
  -n, --number       number of iterations (default 2500)
  -q, --quality      JPEG quality, integer from 0 to 100 (default 80)
- -f, --fuzz         fuzziness when cropping excess space (default 1%)
  -v, --verbose      verbose mode
  -h, --help         display this help text
  --                 disables argument-parsing
                     (useful for filenames that start with '-')
- -b, --background   background color used in trimming
+ -b, --background   background color
                     If specifying colors in '#' notation,
                     use quotes to prevent it being parsed as a comment.
                     If also using GNU Parallel, escape the '#' character with
@@ -93,12 +92,11 @@ Detected file extension: "$extension"
 Detected resolution: "$resolution"
 Number of iterations: "$number_of_iterations"
 JPEG quality level: "$quality"
-fuzz value: "$fuzz_level"
 
 EOF
 }
 
-ARGS=$(getopt --options n:,q:,f:,v,h,b: --long number:,quality:,fuzz:,verbose,help,background:,format: -- "$@")
+ARGS=$(getopt --options n:,q:,v,h,b: --long number:,quality:,verbose,help,background:,format: -- "$@")
 eval set -- "$ARGS"
 while true; do
 		case "$1" in
@@ -108,10 +106,6 @@ while true; do
 			;;
 		-q | --quality)
 			quality="$2"
-			shift 2
-			;;
-		-f | --fuzz)
-			fuzz_level="$2"
 			shift 2
 			;;
 		-v | --verbose)
@@ -181,7 +175,6 @@ resolution="$(identify -ping -format '%wx%h' "$filepath")"
 
 # Bunch of defaults.
 quality="${quality-80}"
-fuzz_level="${fuzz_level-1%}"
 number_of_iterations="${number_of_iterations-2500}"
 background_color="${background_color-white}"
 image_format="${image_format-jpeg}"
@@ -245,8 +238,6 @@ for i in $(seq 0 "$((number_of_iterations - 1))"); do
 	-background "$background_color" \
 	-rotate -"$rotate" \
 	-quality "$quality" \
-	-fuzz "$fuzz_level" \
-	-trim +repage \
 	-gravity center \
 	-extent "$resolution" \
 	"$(formatted_output_name "$base_filename" "$quality" $((i + 1)))"."$image_format"

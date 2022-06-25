@@ -42,26 +42,25 @@ Options:
  -q, --quality      JPEG quality, integer from 0 to 100 (default 80)
  -v, --verbose      verbose mode
  -h, --help         display this help text
- --                 disables argument-parsing
-                    (useful for filenames that start with '-')
  -b, --background   background color
                     If specifying colors in '#' notation,
                     use quotes to prevent it being parsed as a comment.
                     If also using GNU Parallel, escape the '#' character with
                     a backslash ( \ ) in addition to quoting it.
      --format       image format used (default jpeg)
+ --                 disables argument parsing
+                    (useful for filenames that start with '-')
 EOF
 }
 
 function banner() {
-echo Induce JPEG generation loss on images via iterated rotation and saving.
+echo Induce generation loss on images via iterated rotation and saving.
 }
 
 function err_file_notregular() {
 cat << EOF
 $filepath: exists, but is not regular-type.
 Did you input a directory by mistake?
-Note that file descriptors (such as /dev/stdin) are not yet supported as input.
 EOF
 exit 2
 }

@@ -175,7 +175,9 @@ filename="$(basename "$filepath")"
 # Or one with *two*, for that matter?
 extension="${filename##*.}"
 base_filename="${filename%.*}"
-resolution="$(identify -ping -format '%[w]x%[h]' "$filepath")"
+# Hey, did you know that GraphicsMagick won't recognize %[w], only %w in -format strings?
+# Thankfully, correcting it for GM *does* work in IM, so we're not too badly screwed.
+resolution="$(identify -ping -format '%wx%h' "$filepath")"
 
 # Bunch of defaults.
 quality="${quality-80}"

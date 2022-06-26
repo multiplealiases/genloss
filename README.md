@@ -49,7 +49,7 @@ disk/memory usage, especially in tandem with the format case.
 ## Wait, why?!
 
 There's this phenomenon called "generation loss", where if you put some 
-arbitary media (visuals, sound) through a lossy (as opposed to a lossless) 
+arbitrary media (visuals, sound) through a lossy (as opposed to a lossless) 
 process over and over, you'll end up with a degraded copy of it.
 
 I'm not going to embed media for this, I'll just point you to

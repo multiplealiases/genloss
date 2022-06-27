@@ -11,7 +11,7 @@ or "spin to win", image edition.
 ./genloss [options] filename
 ```
 
-Requires one of ImageMagick and GraphicsMagick.
+Requires one of ImageMagick or GraphicsMagick.
 For GM, alias `gm convert` to `convert`, 
 and `gm identify` to `identify` to run this script verbatim.
 On Debian, the package `graphicsmagick-imagemagick-compat` does this for you.
@@ -33,7 +33,73 @@ letting it be still.
 
 ## Using `genloss` effectively 
 
-The main way I use `genloss` is through GNU Parallel. 
+The main way I use `genloss` is through GNU Parallel and on a RAM disk.
+
+Install GNU Parallel from your package manager-- the package you want
+is usually called `parallel`, or some variation of that.
+
+It's not exactly fun to do just one quality setting, nor does the script
+make full use of all available cores (blame ImageMagick and GraphicsMagick),
+so what I do is iterate over them, like so:
+
+```
+$ parallel genloss --quality {} image.png ::: $(seq 0 10 100) 
+```
+
+(if you're wondering what image formats are supported, it's everything that
+your local copy of ImageMagick/GraphicsMagick supports, since it piggybacks off
+their capabilities. This is effectively "all of the ones you've heard of", unless
+your copy is absurdly minimal.)
+
+You use lots of disk space this way, but mounting a tmpfs (Linux only, other
+OSes may have equivalents) is "free", assuming you have the spare RAM.
+
+```
+# mount -t tmpfs -o size=2G,noatime,nodev,noexec,mode=600 ramdisk /mnt
+$ cp image.png /mnt
+$ cd /mnt
+```
+
+Adjust the `size=` parameter to taste. `noatime` is... probably unnecessary,
+but you may as well state it explicitly. `nodev`, `noexec`, and `mode=600`
+prevents device files from working, prevents execution of binaries, and sets 
+all files within it to `chmod 600` (read-write for user, nothing for anyone else)
+respectively.
+
+`ramdisk` is just the name of the new filesystem, and `/mnt` the mount point,
+which you're free to change at your discretion. If you'd like to break FHS,
+go right ahead and `mkdir /ramdisk` and use that as the mount point. (Don't.)
+
+And proceed as usual.
+
+Maybe you'd like to process multiple images.
+
+```
+$ ls
+image1.png image2.jpeg snarf.webp
+$ parallel genloss {} ::: image1.png image2.jpeg snarf.webp 
+```
+
+Or maybe a list of images, for whatever reason.
+
+```
+$ cat list
+image1.png
+image2.jpeg
+snarf.webp
+~/Pictures/faarf.heic
+-oh-damn-you.jpeg
+--double-damn-you.jp2
+$ parallel genloss -- {} :::: list
+```
+Note: `:::` and `::::` aren't the same. `:::` is roughly equvalent to
+`<command> | parallel`, which you can also do, but `::::` reads input from
+the files provided after it.
+
+`--` disables argument parsing for `genloss`, useful for problematic file names
+that start with `-`, otherwise `-oh-damn-you.jpeg` and `--double-damn-you.jp2`
+will get parsed as if they're options called `-oh-damn-you.jpeg`, and
+`--double-damn-you.jp2`.
 
 ## Explaining the "why?" of the options:
 

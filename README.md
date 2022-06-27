@@ -11,12 +11,29 @@ or "spin to win", image edition.
 ./genloss [options] filename
 ```
 
+Requires one of ImageMagick and GraphicsMagick.
+For GM, alias `gm convert` to `convert`, 
+and `gm identify` to `identify` to run this script verbatim.
+On Debian, the package `graphicsmagick-imagemagick-compat` does this for you.
+Your particular distribution may have equivalents.
+
+Written for Bash and GNU `coreutils`.
+(While written on a GNU `coreutils` system, I don't want it 
+to depend on it. Consider non-portability a bug, not a feature.)
+
+Tested on Fedora 36, Raspbian Testing, and Termux.
+
 Oh, wait, you wanted more? 
 
 In lieu of the more traditional "this is what it does" explanations 
-that pervade docs, I've instead decided to explain *why* these options exist,
-a rough cookbook of ways I've used this script, and why I chose to implement
-this "spin to win" tactic, instead of letting it be still.
+that pervade docs, I've instead decided to show a rough cookbook of ways 
+I've used this script, *why* these options exist the way they are, 
+and why I chose to implement this "spin to win" tactic, instead of 
+letting it be still.
+
+## Using `genloss` effectively 
+
+The main way I use `genloss` is through GNU Parallel. 
 
 ## Explaining the "why?" of the options:
 

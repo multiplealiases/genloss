@@ -18,8 +18,9 @@ On Debian, the package `graphicsmagick-imagemagick-compat` does this for you.
 Your particular distribution may have equivalents.
 
 Written for Bash and GNU `coreutils`.
-(While written on a GNU `coreutils` system, I don't want it 
-to depend on it. Consider non-portability a bug, not a feature.)
+(While written on a GNU `coreutils` system, ~~I don't want it 
+to depend on it. Consider non-portability a bug, not a feature.~~ 
+lol, no, not unless POSIX has a long-accepting `getopt`.)
 
 Tested on Fedora 36, Raspbian Testing, and Termux.
 

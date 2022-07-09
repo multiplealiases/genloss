@@ -36,24 +36,10 @@ letting it be still.
 
 The main way I use `genloss` is through GNU Parallel and on a RAM disk.
 
-Install GNU Parallel from your package manager-- the package you want
-is usually called `parallel`, or some variation of that.
+I suggest mounting a RAM disk, just because you're doing lots of tiny writes
+to your disk, and you might get bottlenecked by it. 
 
-It's not exactly fun to do just one quality setting, nor does the script
-make full use of all available cores (blame ImageMagick and GraphicsMagick),
-so what I do is iterate over them, like so:
-
-```
-$ parallel genloss --quality {} image.png ::: $(seq 0 10 100) 
-```
-
-(if you're wondering what image formats are supported, it's everything that
-your local copy of ImageMagick/GraphicsMagick supports, since it piggybacks off
-their capabilities. This is effectively "all of the ones you've heard of", unless
-your copy is absurdly minimal.)
-
-You use lots of disk space this way, but mounting a tmpfs (Linux only, other
-OSes may have equivalents) is "free", assuming you have the spare RAM.
+### Mounting a RAM disk 
 
 ```
 # mount -t tmpfs -o size=2G,noatime,nodev,noexec,mode=600 ramdisk /mnt
@@ -71,7 +57,25 @@ respectively.
 which you're free to change at your discretion. If you'd like to break FHS,
 go right ahead and `mkdir /ramdisk` and use that as the mount point. (Don't.)
 
-And proceed as usual.
+### Using it with `parallel`
+
+It's not exactly fun to do just one quality setting, nor does the script
+make full use of all available cores (blame ImageMagick and GraphicsMagick),
+so what I do is iterate over them, like so:
+
+```
+$ parallel genloss --quality {} image.png ::: $(seq 0 10 100) 
+```
+
+(if you're wondering what image formats are supported, it's everything that
+your local copy of ImageMagick/GraphicsMagick supports, since it piggybacks off
+their capabilities. This is effectively "all of the ones you've heard of", unless
+your copy is absurdly minimal.)
+
+You use lots of disk space this way, but you did just mount a tmpfs, didn't
+you?
+
+#### Multiple images
 
 Maybe you'd like to process multiple images.
 
@@ -81,7 +85,9 @@ image1.png image2.jpeg snarf.webp
 $ parallel genloss {} ::: image1.png image2.jpeg snarf.webp 
 ```
 
-Or maybe a list of images, for whatever reason.
+#### List of images
+
+What about a list of images?
 
 ```
 $ cat list
@@ -101,6 +107,15 @@ the files provided after it.
 that start with `-`, otherwise `-oh-damn-you.jpeg` and `--double-damn-you.jp2`
 will get parsed as if they're options called `-oh-damn-you.jpeg`, and
 `--double-damn-you.jp2`.
+
+#### Over images and quality settings
+
+```
+$ parallel genloss --quality {1} {2} ::: seq 0 1 100 ::: image1.png image2.jpeg image4.webp
+```
+
+This is probably hilariously overkill, but I don't care how you use this thing,
+so long you're following the MIT license.
 
 ## Explaining the "why?" of the options:
 

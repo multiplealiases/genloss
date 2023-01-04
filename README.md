@@ -18,9 +18,6 @@ On Debian, the package `graphicsmagick-imagemagick-compat` does this for you.
 Your particular distribution may have equivalents.
 
 Written for Bash and GNU `coreutils`.
-(While written on a GNU `coreutils` system, ~~I don't want it 
-to depend on it. Consider non-portability a bug, not a feature.~~ 
-lol, no, not unless POSIX has a long-accepting `getopt`.)
 
 Tested on Fedora 36, Raspbian Testing, and Termux.
 
@@ -39,7 +36,7 @@ The main way I use `genloss` is through GNU Parallel and on a RAM disk.
 I suggest mounting a RAM disk, just because you're doing lots of tiny writes
 to your disk, and you might get bottlenecked by it. 
 
-### Mounting a RAM disk 
+### Mounting a RAM disk (Linux only?)
 
 ```
 # mount -t tmpfs -o size=2G,noatime,nodev,noexec,mode=600 ramdisk /mnt

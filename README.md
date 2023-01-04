@@ -12,8 +12,9 @@ or "spin to win", image edition.
 ```
 
 Requires one of ImageMagick or GraphicsMagick.
-For GM, alias `gm convert` to `convert`, 
-and `gm identify` to `identify` to run this script verbatim.
+For GM, alias `gm convert` to `convert`,
+and `gm identify` to `identify` to run this script verbatim, or edit the
+script.
 On Debian, the package `graphicsmagick-imagemagick-compat` does this for you.
 Your particular distribution may have equivalents.
 

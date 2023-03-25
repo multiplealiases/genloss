@@ -6,15 +6,16 @@ $(banner)
 $(usage)
 
 Options:
- -n, --number       number of iterations (default 2500)
- -q, --quality      JPEG quality, integer from 0 to 100 (default 80)
- -h, --help         display this help text
- -f,  --format      image format used (default jpeg)
+ -n, --number         number of iterations (default 2500)
+ -u, --upper-quality  upper bound of JPEG quality (default 100)
+ -l, --lower-quality  lower bound of JPEG quality (default 60)
+ -h, --help           display this help text
+ -f, --format         image format used (default jpeg)
 EOF
 }
 
 function banner() {
-echo Induce generation loss on images via saving at random qualities
+echo Induce generation loss on images by saving at random qualities
 }
 
 
